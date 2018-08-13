@@ -11,10 +11,11 @@ import (
 // Set levels to callerLevels for which "caller" value may be set, providing a
 // single frame of stack. Set levels to stackLevels for which "stack" value may
 // be set, providing the full stack (minus logrus).
-func NewHook(callerLevels []logrus.Level, stackLevels []logrus.Level) LogrusStackHook {
+func NewHook(callerLevels []logrus.Level, stackLevels []logrus.Level, skipFramesBase int) LogrusStackHook {
 	return LogrusStackHook{
-		CallerLevels: callerLevels,
-		StackLevels:  stackLevels,
+		CallerLevels: 	callerLevels,
+		StackLevels:  	stackLevels,
+		SkipFramesBase: skipFramesBase,
 	}
 }
 
@@ -36,6 +37,10 @@ type LogrusStackHook struct {
 	// Set levels to StackLevels for which "stack" value may be set,
 	// providing the full stack (minus logrus).
 	StackLevels []logrus.Level
+
+	// Set custom numbers of skiping frames,
+	// useful when logger being wrapped by your code.
+	SkipFramesBase int
 }
 
 // Levels provides the levels to filter.
@@ -45,13 +50,13 @@ func (hook LogrusStackHook) Levels() []logrus.Level {
 
 // Fire is called by logrus when something is logged.
 func (hook LogrusStackHook) Fire(entry *logrus.Entry) error {
-	var skipFrames int
+	skipFrames := hook.SkipFramesBase
 	if len(entry.Data) == 0 {
 		// When WithField(s) is not used, we have 8 logrus frames to skip.
-		skipFrames = 8
+		skipFrames += 8
 	} else {
 		// When WithField(s) is used, we have 6 logrus frames to skip.
-		skipFrames = 6
+		skipFrames += 6
 	}
 
 	var frames stack.Stack
